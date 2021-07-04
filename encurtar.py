@@ -1,58 +1,90 @@
-import json
-import platform
-import os
+import platform, os, json, re, sys
 
-def Check():
-	try:
-		import requests
-	except ImportError:
-		os.system("python -m pip install requests")
-		os.system("cls")
+try:
+	import requests
+except:
+	os.system("pip install requests")
+	os.system("cls" if platform.system() == "Windows" else "clear")
 
-isWindows = platform.system() == "Windows"
 
-Check()
-import requests
+def get_domain_suffixes():																
+    res=requests.get('https://publicsuffix.org/list/public_suffix_list.dat')
+    lst=set()
+    for line in res.text.split('\n'):
+        if not line.startswith('//'):
+            domains=line.split('.')
+            cand=domains[-1]
+            if cand:
+                lst.add('.'+cand)
+    return tuple(sorted(lst))
 
-class EncurtaADor:
+domain_suffixes=get_domain_suffixes()
 
-	def __init__(self, url):
+#https://stackoverflow.com/questions/7160737/how-to-validate-a-url-in-python-malformed-or-not/65695825#65695825
 
-		self.encurtar1 = url
-		self.url = "https://abre.ai/_/generate"
-		self.user_agent = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36"
+a = ("http", "https", "www", "ftp")
 
-	def Send(self):
-		jsonkk = {"url_translation":{"url":self.encurtar1,"token":""}}
-		headers = {'User-Agent': self.user_agent}
-		r = requests.post(self.url, headers=headers, json=jsonkk)
-		if r.status_code == 201:
-			j = json.loads(r.text)
-			splitted = str(j).split(':')
-			token = splitted[9]
-			token = str(token).split(',')
-			token = str(token)
-			t = token.replace('/', '')
-			t = t.replace('[', '')
-			t = t.replace('[', '')
-			t = t.replace('"', '')
-			t = t.replace("'", '')
-			t = t.replace('}', '')
-			t = t.replace(']', '')
+def validarurl(url = ""):
+	return True if url.startswith(a) or url.endswith(domain_suffixes) else False
 
-			if isWindows:
-				os.system("cls")
+
+class Encurtador:
+
+	def __init__(self):
+		self.Url = "https://abre.ai/_/generate"
+		self.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+
+		self.urlOriginal = ""
+		self.urlEncurtada = ""
+
+	def Encurtar(self, url = "", apelido = ""):
+		if url != "":
+
+			payloadRequest = {
+				"url_translation":
+				{	
+					"url":url,
+					"token": "" if apelido == "" else apelido
+				}
+			}
+			r = requests.post(self.Url, json=payloadRequest, headers={"User-Agent": self.userAgent})
+			if r.status_code == 201:
+				os.system("cls" if platform.system() == "Windows" else "clear")
+				dataJson = json.loads(r.text)['data']
+				attributes = dataJson['attributes']
+				token = attributes['token']
+				self.urlOriginal = url
+				self.urlEncurtada = f'https://abre.ai/{apelido}' if apelido != "" else f'https://abre.ai/{token}'
+				Id = dataJson['id']
+				print(f'-- Sucesso! -- \n\nUrl Original: {self.urlOriginal}\nUrl Encurtada: {self.urlEncurtada}\nID: {Id}')
 			else:
-				os.system("clear")
+				os.system("cls" if platform.system() == "Windows" else "clear")
+				erro = json.loads(r.text)['errors']
+				erroNome = re.search("{'(.+)': ", str(erro)).group().replace("'", "").replace(":", "").replace("{", "").strip()
+				erro = erro[erroNome][0]
+				print(erro)
+		
+def main(url, apelido):
+	encurtador = Encurtador()
+	encurtar = encurtador.Encurtar(url, apelido)
 
-			print(f'''
+def erro(url):
+	print(f'{url} => URL Inválida!')
 
-Informações
+def uso():
+	os.system("cls" if platform.system() == "Windows" else "clear")
+	print(f'----- Como usar ------')
+	print('\nencurtar.py <*url*> <apelido>')
+	print('\nExemplo sem apelido: encurtar.py https://google.com/')
+	print('\nExemplo com apelido: encurtar.py https://google.com/ apelidofoda')
+	exit()
 
-Link Original: {self.encurtar1}
+try:
+	URL = str(sys.argv[1])
+	Apelido = str(sys.argv[2])
+except:
+	uso()
 
-[*] Link Encurtado: https://{t}/
+validar = validarurl(URL)
 
-				''')
-		else:
-			print('\nErro ao encurtar a url!')
+main(URL, Apelido) if validar else erro(URL)
