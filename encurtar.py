@@ -64,7 +64,6 @@ try:
 					erroNome = re.search("{'(.+)': ", str(erro)).group().replace("'", "").replace(":", "").replace("{", "").strip()
 					erro = erro[erroNome][0]
 					print(f'Erro: {erro}')
-					print(self.token)
 			
 	def main(url, apelido):
 		encurtador = Encurtador()
