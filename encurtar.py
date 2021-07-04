@@ -62,7 +62,7 @@ class Encurtador:
 				erro = json.loads(r.text)['errors']
 				erroNome = re.search("{'(.+)': ", str(erro)).group().replace("'", "").replace(":", "").replace("{", "").strip()
 				erro = erro[erroNome][0]
-				print(erro)
+				print(f'Erro: {erro}')
 		
 def main(url, apelido):
 	encurtador = Encurtador()
